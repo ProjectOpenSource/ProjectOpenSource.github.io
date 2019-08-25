@@ -1,11 +1,127 @@
 <!DOCTYPE html>
 <html lang="zh">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Welcome to Mina</title>
-    <style></style>
-  </head>
-  <body></body>
-  <script>
-  </script>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Welcome to Mina</title>
+  <style>
+    .cas{
+      background:#000;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="canvas-wrap">
+    <canvas width="800" height="600" id="cas"></canvas>
+  </div>
+</body>
+<script>
+  function Stage(elm) {
+    this.cas = document.getElementById(elm);
+    this.ctx = this.cas.getContext("2d");
+    this.counts = 500; //最大粒子数
+    this.particlesArr = [];
+    this.init();
+  }
+
+  Stage.prototype = {
+    resize: function (booleam) {
+      this.width = this.cas.width = booleam ? this.cas.parentNode.clientWidth * 1 : window.innerWidth * 1;
+      this.height = this.cas.height = booleam ? this.cas.parentNode.clientHeight * 1 : window.innerHeight * 1;
+    },
+    clear: function () {
+      this.ctx.clearRect(0, 0, this.width, this.height);
+    },
+    createParticles: function () {
+      console.log('createParticles')
+      var halfWidth = this.width / 2,
+        halfHeight = this.height / 2;
+
+      for (var i = 0; i < this.counts; i++) {
+        var circle = new Circle({
+          ctx: this.ctx,
+          fl: 100,
+          posx: Math.random() * this.width - halfWidth,
+          posy: Math.random() * this.height - halfHeight,
+          posz: Math.random() * 250,
+          size: 10,
+          speed: Math.random() * 2,
+          origin: {
+            x: this.width / 2,
+            y: this.height / 2
+          }
+        });
+        this.particlesArr.push(circle);
+      }
+    },
+    render: function () {
+      this.clear();
+
+      this.particlesArr.forEach(function (elm) {
+        elm.draw();
+      })
+    },
+    animate: function () {
+      var _this = this;
+
+      this.render();
+
+      window.requestAnimationFrame(function () {
+        _this.animate();
+      });
+    },
+    init: function () {
+      console.log('init');
+      this.resize(true);
+      this.createParticles();
+      this.animate();
+    }
+  }
+  function Circle() {
+    this.ctx = arguments[0]['ctx'];
+    this.fl = arguments[0]['fl'];
+    this.posx = arguments[0]['posx'];
+    this.posy = arguments[0]['posy'];
+    this.posz = arguments[0]['posz'];
+    this.origenZ = arguments[0]['posz'];
+    this.size = arguments[0]['size'];
+    this.r = arguments[0]['size'] / 2
+
+    this.x = this.posx;
+    this.y = this.posy;
+    this.origin = arguments[0]['origin'];
+    this.speed = arguments[0]['speed'];
+    this.color = arguments[0]['color'] ? arguments[0]['color'] : "#980f99";
+    this.died = false;
+  }
+  Circle.prototype = {
+    //3D坐标投影
+    projection: function () {
+      if (this.posz > -this.fl) {
+        var scale = this.fl / (this.fl + this.posz);
+        this.x = this.origin.x + this.posx * scale;
+        this.y = this.origin.y + this.posy * scale;
+        this.size = this.r * scale;
+        this.posz -= this.speed;
+      } else {
+        this.posz = this.origenZ;
+      }
+    },
+    draw: function () {
+      this.projection();
+      this.ctx.save();
+      this.ctx.fillStyle = this.color;
+      this.ctx.translate(this.x, this.y);
+      this.ctx.beginPath();
+      this.ctx.arc(-this.r, -this.r, this.size, 0, Math.PI * 2, false);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.restore();
+    }
+  }
+
+  new Stage("cas");
+</script>
+
 </html>
