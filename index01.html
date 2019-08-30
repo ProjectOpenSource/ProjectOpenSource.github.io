@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+</head>
+<style>
+  * {
+    margin: 0px;
+    padding: 0px;
+    outline: none;
+    border: 0;
+  }
+
+  html,
+  body {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    bottom: 0%;
+    right: 0%;
+    overflow: hidden;
+  }
+
+  .canvas {
+    width: 100%;
+    height: 100%;
+  }
+</style>
+
+<body>
+  <canvas id="canvas"></canvas>
+</body>
+<script>
+  function color16() {
+    var r = Math.floor(Math.random() * 256);
+    var g = Math.floor(Math.random() * 256);
+    var b = Math.floor(Math.random() * 256);
+    var color = '#' + r.toString(16) + g.toString(16) + b.toString(16);
+    return color;
+  }
+  function ThreeD(id) {
+    this.cvs = document.getElementById(id);
+    this.ctx = this.cvs.getContext("2d");
+    this.clientWidth = this.cvs.width;
+    this.clientHeight = this.cvs.height;
+    this.counts = 1000;
+    this.domArr = [];
+    this.init();
+  }
+  ThreeD.prototype = {
+    resize: function () {
+      let width = document.body.clientWidth;
+      let height = document.body.clientHeight;
+      this.cvs.width = width;
+      this.cvs.height = height;
+      this.clientWidth = this.cvs.width;
+      this.clientHeight = this.cvs.height;
+    },
+    clear: function () {
+      this.ctx.clearRect(0, 0, this.clientWidth, this.clientHeight);
+    },
+    intiDomArr: function () {
+      const centralX = this.clientWidth / 2,
+        centralY = this.clientHeight / 2;
+      var that = this;
+      for (var i = 0; i < this.counts; i++) {
+        var color = color16();
+        const randomX = Math.floor(Math.random() * this.clientWidth);
+        const randomY = Math.floor(Math.random() * this.clientHeight);
+        console.log('x:' + (centralX - randomX));
+        console.log('y:' + (centralY - randomY));
+        let circle = new Circle({
+          ctx: that.ctx,
+          visibility: 100,
+          posx: centralX - randomX,
+          posy: centralY - randomY,
+          posz: Math.random() * 1000,
+          size: 10,
+          speed: Math.random() * 1,
+          rotate: 0.03,
+          centralx: centralX,
+          centraly: centralY,
+          r: 5,
+          color: color
+        });
+
+        this.domArr.push(circle);
+
+      }
+    },
+    render: function () {
+      this.clear();
+      this.domArr.forEach(function (el, index) {
+        el.draw();
+      });
+      this.ctx.save();
+      this.ctx.fillStyle = "#ff0000";
+      this.ctx.translate(this.clientWidth / 2, this.clientHeight / 2);
+      this.ctx.beginPath();
+      this.ctx.arc(0, 0, 6, 0, Math.PI * 2, false);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.restore();
+    },
+    animate: function () {
+      var that = this;
+      that.render();
+      window.requestAnimationFrame(function () {
+        that.animate();
+      })
+      // setTimeout(function () {
+      //   that.animate();
+      // }, 1000)
+    },
+    init: function () {
+      var that = this;
+      this.resize();
+      window.addEventListener("resize", function () {
+        that.resize();
+      });
+      this.clear();
+      this.intiDomArr();
+      this.animate();
+    }
+  }
+  function Circle(args) {
+    this.ctx = args['ctx'];
+    this.visibility = args['visibility'];
+    this.posx = args['posx'];
+    this.posy = args['posy'];
+    this.posz = args['posz'];
+    this.centralx = args['centralx'];
+    this.centraly = args['centraly'];
+    this.size = args['size'];
+    this.r = args['r'];
+    this.x = this.posx;
+    this.y = this.posy;
+    this.z = this.posz;
+    this.speed = args['speed'];
+    this.rotate = args['rotate'];
+    this.color = args['color'];
+    var scale = this.visibility / (this.visibility + this.z);
+    var relativeX = this.posx * scale;
+    var relativeY = this.posy * scale;
+    var angle = this.angle(relativeX, relativeY);
+    this.angle = angle;
+    console.log(this)
+  }
+  Circle.prototype = {
+    projection: function () {
+      if (this.z > -this.visibility) {
+        var scale = this.visibility / (this.visibility + this.z);
+        var relativeX = this.posx * scale;
+        var relativeY = this.posy * scale;
+        var angle = this.angle;
+        var rotate = this.rotate;
+        angle += rotate;
+        this.angle = angle;
+        var c = Math.sqrt(Math.pow(relativeX, 2) + Math.pow(relativeY, 2));
+        var rotateX = c * Math.cos((angle / 180) * Math.PI);
+        var rotateY = c * Math.sin((angle / 180) * Math.PI);
+
+
+
+        this.size = this.r * scale;
+        this.x = this.centralx + rotateX;
+        this.y = this.centraly - rotateY;
+        this.z -= this.speed;
+      } else {
+        this.z = this.posz;
+      }
+    },
+    angle: function (px, py) {
+      var x = Math.abs(px);
+      var y = Math.abs(py);
+      var c = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+      var radina = Math.acos(x / c);
+      var angle = 180 * (radina / Math.PI);
+      if (px > 0 && py < 0) {
+        //angle > 270
+        angle = 360 - angle;
+      }
+      if (px < 0 && py < 0) {
+        //angle > 180
+        angle = 180 + angle;
+      }
+      if (px < 0 && py > 0) {
+        //angle > 90
+        angle = 180 - angle;
+      }
+      if (px > 0 && py > 0) {
+        //angle > 0
+        angle = 0 + angle;
+      }
+      if (px > 0 && py == 0) {
+        angle = 0;
+      }
+      if (px == 0 && py > 0) {
+        angle = 90;
+      }
+      if (px < 0 && py == 0) {
+        angle = 180;
+      }
+      if (px == 0 && py < 0) {
+        angle = 270;
+      }
+      return angle;
+    },
+    draw: function () {
+      this.projection();
+      this.ctx.save();
+      this.ctx.fillStyle = this.color;
+      this.ctx.translate(0, 0);
+      this.ctx.beginPath();
+      this.ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.restore();
+    }
+  }
+  var td = new ThreeD('canvas');
+</script>
+
+</html>

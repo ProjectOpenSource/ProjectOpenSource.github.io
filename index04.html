@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+  <meta charset='UTF-8'>
+  <title>Document</title>
+</head>
+<style>
+  * {
+    padding: 0px;
+    margin: 0px;
+  }
+
+  html,
+  body {
+    position: absolute;
+    z-index: 0;
+    overflow: hidden;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #fff;
+    overflow: hidden;
+  }
+
+  #canvas {
+    position: absolute;
+    z-index: 1;
+    overflow: hidden;
+  }
+</style>
+
+<body>
+  <canvas id='canvas'>
+    <p>不支持canvas请升级浏览器，推荐使用Google Chrome 浏览器</p>
+  </canvas>
+  <div id='app'></div>
+</body>
+<script>
+  var cvs = document.getElementById('canvas');
+  var resize = function (cvs) {
+    cvs.width = document.body.clientWidth;
+    cvs.height = document.body.clientHeight;
+  }
+  resize(cvs);
+  window.addEventListener('resize', function () {
+    resize(cvs);
+  });
+  //所有对象 pos3d 是相对于中心的空间坐标
+  //pos2d 是相对于(0,0)的2d绘画坐标
+  //pos -> 表示3d坐标
+  //origin -> 表示2d坐标
+  //默认视角中心和世界坐标是同一个
+  var Sphere = function (args) {
+    this.counts = args['counts'];
+    this.points = [];//图像由点组成
+    this.parentPos = { x: 0, y: 0, z: 0 };
+    this.initSelfPos = args['pos'];//3d相对坐标初始值
+    this.selfPos = args['pos'];//3d相对坐标
+    this.r = args['r'] ? args['r'] : 20;
+    this.color = args['color'] ? args['color'] : '#000';
+    this.screenOrigin = args['origin'];//屏幕中心坐标2d绝对坐标w/2,h/2
+    this.selfOrigin = {};//图像坐标2d绝对坐标w/2,h/2 由3d坐标投影而来
+    this.option = args['option'];
+    this.ctx = args['ctx'];
+    this.percent = parseFloat(args['percent']);
+    this.visibility = args['visibility'];//可视范围
+    this.loop = true;
+    this.clientWidth = args['clientWidth'];
+    this.clientHeight = args['clientHeight'];
+    // console.log(this)
+    this.init();
+  };
+  Sphere.prototype = {
+    resize: function () {
+      this.clientWidth = document.body.clientWidth;
+      this.clientHeight = document.body.clientHeight;
+    },
+    initShape: function () {
+      this.projection();
+      //建立球坐标系(r,longitude,latitude)
+      //latitude 维度 [0,1*PI]
+      //longitude 经度 [0,2*PI]
+      var point_arr = [];
+      console.log('创建图像点')
+      var latitudeCount = Math.abs(Math.floor(this.counts ));
+      var longitudeCount = Math.abs(Math.floor(this.counts ));
+      console.log('圆的维度:' + latitudeCount);
+      console.log('园的经度:' + longitudeCount);
+      for (var i = 0; i <= latitudeCount; i++) {
+        var latitude = Math.PI * (i / latitudeCount)
+        for (var j = 0; j < longitudeCount; j++) {
+          var longitude = Math.PI * 2 * (j / longitudeCount)
+          var x = this.r * Math.sin(latitude) * Math.cos(longitude);
+          var y = this.r * Math.sin(latitude) * Math.sin(longitude);
+          var z = this.r * Math.cos(latitude);
+          // console.log('x:' + x + '\ny:' + y + '\nz:' + z)
+          //创建一组以0，0为原点的球坐标
+          point_arr.push({ x: x, y: y, z: z });
+        }
+      }
+      this.createVertex(point_arr);
+    },
+    createVertex: function (vertex) {
+      var origin = this.screenOrigin;
+      var totateSpeed = Math.PI / 2 / 100;
+      vertex.forEach(function (e, i) {
+        var point = new Point({
+          self: {
+            pos: e,//点坐标3d 相对位置-相对于球心3d
+          },
+          parent: {
+            pos: this.selfPos,//球心3d 绝对位置
+            origin: origin,//球心2d 绝对位置
+          },
+          color: Utils.randomColor(),
+          size: 5,//点的大小
+          visibility: this.visibility,
+        });
+        this.points.push(point);
+      }.bind(this));
+      this.ctx.strokeStyle = "#24cb89";
+    },
+    clear: function () {
+      this.ctx.clearRect(0, 0, this.clientWidth, this.clientHeight);
+    },
+    projection: function () {
+      var scale = this.visibility / (this.visibility + (this.selfPos.z));
+      var prox = scale * (this.selfPos.x) + this.screenOrigin.x;
+      var proy = scale * (this.selfPos.y) + this.screenOrigin.y;
+      this.r = this.r * scale;
+      this.selfOrigin.x = prox;
+      this.selfOrigin.y = proy;
+    },
+    draw: function () {
+      this.clear();
+      this.drawPoint();
+    },
+    drawPoint: function () {
+      var that = this;
+      this.points.forEach(function (e, i) {
+        e.draw(this.ctx);
+      }.bind(this));
+    },
+    render: function () {
+      this.draw();
+    },
+    animation: function () {
+      var that = this;
+      that.render();
+      window.requestAnimationFrame(function () {
+        that.animation();
+      });
+      // setTimeout(function(){
+      //   that.animation();
+      // },1000)
+    },
+    rotate: function () { },
+    update: function () { },
+    init: function () {
+      this.resize();
+      this.initShape();
+      this.animation();
+    }
+  }
+  var Point = function (args) {
+    this.initSelfPos = args['self']['pos'];
+    this.selfPos = args['self']['pos'];
+    this.selfOrigin = { x: 0, y: 0 };//由3d坐标投影而来
+    this.parentPos = args['parent']['pos'];
+    this.screenOrigin = args['parent']['origin'];
+    this.color = args['color'];
+    this.size = args['size'];
+    this.r = args['size']
+    this.visibility = args['visibility'];
+    this.angle = Math.PI / 2 / 100;
+    // console.log(this)
+  }
+  Point.prototype = {
+    rotateX: function () {
+      var cosx = Math.cos(this.angle),
+        sinx = Math.sin(this.angle),
+        y1 = this.selfPos.y * cosx + this.selfPos.z * sinx,
+        z1 = this.selfPos.z * cosx - this.selfPos.y * sinx;
+
+      this.selfPos.y = y1;
+      this.selfPos.z = z1;
+    },
+    rotateZ: function () {
+      var cosz = Math.cos(this.angle),
+        sinz = Math.sin(this.angle),
+        y1 = this.selfPos.y * cosz + this.selfPos.x * sinz,
+        x1 = this.selfPos.x * cosz - this.selfPos.y * sinz;
+
+      this.selfPos.x = x1;
+      this.selfPos.y = y1;
+    },
+    rotateY: function () {
+      var cosy = Math.cos(this.angle),
+        siny = Math.sin(this.angle),
+        x1 = this.selfPos.x * cosy + this.selfPos.z * siny,
+        z1 = this.selfPos.z * cosy - this.selfPos.x * siny;
+
+      this.selfPos.x = x1;
+      this.selfPos.z = z1;
+    },
+    projection: function () {
+      if (this.selfPos.z > -this.visibility) {
+        var scale = this.visibility / (this.visibility + this.selfPos.z + this.parentPos.z);
+        // console.log(scale)
+        this.selfOrigin.x = scale * (this.selfPos.x + this.parentPos.x) + this.screenOrigin.x;
+        this.selfOrigin.y = scale * (this.selfPos.y + this.parentPos.y) + this.screenOrigin.y;
+        this.size = this.r * scale;
+      }
+    },
+    draw: function (ctx) {
+      this.rotateY();
+      // this.rotateX();
+      // this.rotateZ();
+      // console.log('画')
+      ctx.beginPath();
+      // console.log(this)
+      ctx.arc(this.selfOrigin.x, this.selfOrigin.y, this.size, 0, Math.PI * 2, false);  //canvas中绘制圆会比绘制方块消耗更多性能
+      ctx.closePath();
+      ctx.fillStyle = this.color;
+      ctx.fill();
+      this.projection();
+    },
+  }
+  var Utils = function () { }
+  Utils.randomColor = function () {
+    var r = Math.floor(Math.random() * 255);
+    var g = Math.floor(Math.random() * 255);
+    var b = Math.floor(Math.random() * 255);
+    return 'rgba(' + r + ',' + g + ',' + b + ',1)'
+  }
+  new Sphere({
+    pos: { x: 00, y: 0, z: 30 },
+    r: 300,
+    counts:20,
+    visibility: 1000,
+    color: Utils.randomColor(),
+    origin: {
+      x: cvs.width / 2,
+      y: cvs.height / 2,
+    },
+    option: {},
+    percent: parseFloat(2 / 30),
+    ctx: cvs.getContext('2d'),
+    clientWidth: cvs.width,
+    clientHeight: cvs.height
+  });
+</script>
+
+</html>

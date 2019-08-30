@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+  <meta charset='UTF-8'>
+  <title>Document</title>
+</head>
+<style>
+  * {
+    padding: 0px;
+    margin: 0px;
+  }
+
+  html,
+  body {
+    position: absolute;
+    z-index: 0;
+    overflow: hidden;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #fff;
+    overflow: hidden;
+  }
+
+  #canvas {
+    position: absolute;
+    z-index: 1;
+    overflow: hidden;
+  }
+</style>
+
+<body>
+  <canvas id='canvas'>
+    <p>不支持canvas请升级浏览器，推荐使用Google Chrome 浏览器</p>
+  </canvas>
+  <div id='app'></div>
+</body>
+<script src='./commpont/Point.js'></script>
+<script src='./commpont/Sphere.js'></script>
+<script src='./commpont/Utils.js'></script>
+<script>
+  var cvs = document.getElementById('canvas');
+  var resize = function (cvs) {
+    cvs.width = document.body.clientWidth;
+    cvs.height = document.body.clientHeight;
+  }
+  var sphere1=new Sphere({
+    pos: { x: 100, y: 100, z: 30 },
+    parentPos:{x:0,y:0,z:0},
+    r: 100,
+    counts: 20,
+    visibility: 2000,
+    color: Utils.randomColor(),
+    origin: {
+      x: cvs.width / 2,
+      y: cvs.height / 2,
+    },
+    option: {},
+    percent: parseFloat(2 / 30),
+    ctx: cvs.getContext('2d'),
+    cvs: cvs,
+    clientWidth: cvs.width,
+    clientHeight: cvs.height,
+    pointSize:3,
+    rotate:Math.PI/2000,
+  });
+</script>
+
+</html>
