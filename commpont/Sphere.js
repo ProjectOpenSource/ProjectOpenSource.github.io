@@ -10,38 +10,22 @@ var Sphere = function (args) {
   this.screenOrigin = args['origin'];//屏幕中心坐标2d绝对坐标w/2,h/2
   this.selfOrigin = {};//图像坐标2d绝对坐标w/2,h/2 由3d坐标投影而来
   this.option = args['option'];
-  this.ctx = args['ctx'];
   this.percent = parseFloat(args['percent']);
   this.visibility = args['visibility'];//可视范围
   this.loop = true;
   this.clientWidth = args['clientWidth'];
   this.clientHeight = args['clientHeight'];
-  this.cvs = args['cvs']
+  this.cvs = args['cvs'];
+  this.ctx = this.cvs.getContext('2d')
   this.pointSize = args['pointSize']
   this.rotate = args['rotate']
-  // console.log(this)
   this.init();
 };
 Sphere.prototype = {
-  resize: function () {
-    this.clientWidth = document.body.clientWidth;
-    this.clientHeight = document.body.clientHeight;
-    this.cvs.width = this.clientWidth;
-    this.cvs.height = this.clientHeight;
-    // console.log('update')
-    this.update();
-  },
-  update: function () {
-    // console.log('update2')
-    this.screenOrigin = {
-      x: this.clientWidth / 2,
-      y: this.clientHeight / 2
-    }
-    this.selfPos = {
-      x: this.selfPos.x,
-      y: this.selfPos.y,
-      z: this.selfPos.z
-    }
+  update: function (args) {
+    this.screenOrigin = args['screenOrigin']
+    this.selfPos = args['pos'];
+    this.parentPos = args['parentPos']
     this.ctx.lineWidth = 2;
     this.ctx.strokeStyle = Utils.randomColor();
     this.initShape();
@@ -69,18 +53,18 @@ Sphere.prototype = {
     vertex.forEach(function (e, i) {
       var point = new Point({
         self: {
-          pos: e,//点坐标3d 相对位置-相对于球心3d
+          pos: e,
         },
         parent: {
           pos: {
-            x:this.selfPos.x+this.parentPos.x,
-            y:this.selfPos.y+this.parentPos.y,
-            z:this.selfPos.z+this.parentPos.z,
-          },//球心3d 绝对位置
-          origin: origin,//球心2d 绝对位置
+            x: this.selfPos.x + this.parentPos.x,
+            y: this.selfPos.y + this.parentPos.y,
+            z: this.selfPos.z + this.parentPos.z,
+          },
+          origin: origin,
         },
         color: Utils.randomColor(),
-        size: this.pointSize,//点的大小
+        size: this.pointSize,
         visibility: this.visibility,
         rotate: this.rotate,
       });
@@ -96,26 +80,53 @@ Sphere.prototype = {
     this.ctx.clearRect(0, 0, this.clientWidth, this.clientHeight);
   },
   projection: function () {
-    var scale = this.visibility / (this.visibility + (this.selfPos.z+this.parentPos.z));
-    var prox = scale * (this.selfPos.x+this.parentPos.x) + this.screenOrigin.x;
-    var proy = scale * (this.selfPos.y+this.parentPos.y) + this.screenOrigin.y;
+    var scale = this.visibility / (this.visibility + (this.selfPos.z + this.parentPos.z));
+    var prox = scale * (this.selfPos.x + this.parentPos.x) + this.screenOrigin.x;
+    var proy = scale * (this.selfPos.y + this.parentPos.y) + this.screenOrigin.y;
     this.size = this.r * scale;
     this.selfOrigin.x = prox;
     this.selfOrigin.y = proy;
   },
   draw: function () {
-    this.clear();
-    this.pointSort();
     this.drawPoint();
-    // this.drawLine();
   },
   drawPoint: function () {
     var that = this;
+    var origin = this.screenOrigin;
     this.points.forEach(function (e, i) {
-      e.rotateY();
+      e.update({
+        parent: {
+          pos: {
+            x: this.selfPos.x + this.parentPos.x,
+            y: this.selfPos.y + this.parentPos.y,
+            z: this.selfPos.z + this.parentPos.z,
+          },
+          origin: origin,
+        },
+        rotate: this.rotate,
+      });
       e.projection();
       e.draw(this.ctx);
     }.bind(this));
+    this.pointSort();
+  },
+  rotateY: function () {
+    var that = this;
+    this.points.forEach(function (e, i) {
+      e.rotateY();
+    })
+  },
+  rotateX: function () {
+    var that = this;
+    this.points.forEach(function (e, i) {
+      e.rotateX();
+    })
+  },
+  rotateZ: function () {
+    var that = this;
+    this.points.forEach(function (e, i) {
+      e.rotateZ();
+    })
   },
   drawLine: function () {
     this.ctx.beginPath();
@@ -127,23 +138,11 @@ Sphere.prototype = {
   },
   render: function () {
     this.draw();
+    console.log('draw')
   },
-  animation: function () {
-    var that = this;
-    that.render();
-    window.requestAnimationFrame(function () {
-      that.animation();
-    });
-  },
-  rotate: function () { },
   init: function () {
     var that = this;
-    that.resize();
-    window.addEventListener('resize', function () {
-      that.resize();
-    })
     this.initShape();
     this.projection();
-    this.animation();
   }
 }

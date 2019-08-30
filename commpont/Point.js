@@ -49,20 +49,16 @@ Point.prototype = {
     }
   },
   draw: function (ctx) {
-    // this.rotateX();
-    // this.rotateZ();
-    // console.log('画')
     ctx.beginPath();
-    // console.log(thisX
     ctx.arc(this.selfOrigin.x, this.selfOrigin.y, this.size, 0, Math.PI * 2, false);  //canvas中绘制圆会比绘制方块消耗更多性能
     ctx.closePath();
     ctx.fillStyle = this.color;
     ctx.fill();
   },
-  update: function () {
-    this.rotateX();
-    this.rotateY();
-    this.rotateZ();
+  update: function (args) {
+    this.parentPos = args['parent']['pos']?args['parent']['pos']:this.parentPos;
+    this.screenOrigin = args['parent']['origin']?args['parent']['origin']:this.screenOrigin;
+    this.angle = args['rotate']?args['rotate']:this.angle;
     this.projection();
   }
 }
