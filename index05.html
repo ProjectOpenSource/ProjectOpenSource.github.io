@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang='en'>
+<html lang='zh'>
 
 <head>
   <meta charset='UTF-8'>
@@ -48,12 +48,12 @@
     cvs.width = document.body.clientWidth;
     cvs.height = document.body.clientHeight;
   }
-  var Star = function (args) {
+  var Start = function (args) {
     this.cvs = args['cvs']
-    this.ctx = this.ctx.getContext('2d')
+    this.ctx = this.cvs.getContext('2d')
     this.shapes = [];
     this.clientWidth = document.body.clientWidth;
-    this.clientHeight = document.body.clientWidth;
+    this.clientHeight = document.body.clientHeight;
     this.screenOrigin = {
       x: this.clientWidth / 2,
       y: this.clientHeight / 2
@@ -64,32 +64,42 @@
       z: 0
     }
     this.visibility = args['visibility'];
+    this.ctx.strokeStyle =  Utils.randomColor();
+    this.init();
   }
-  Star.prototype = {
+  Start.prototype = {
     resize: function () {
       this.cvs.width = document.body.clientWidth;
       this.cvs.height = document.body.clientHeight;
       this.clientWidth = this.cvs.width;
       this.clientHeight = this.cvs.height;
-      this.update();
+      this.update({
+        screenOrigin: {
+          x: this.clientWidth / 2,
+          y: this.clientHeight / 2
+        },
+        pos: {
+          x: this.pos.x,
+          y: this.pos.y,
+          z: this.pos.z
+        }
+      });
     },
-    update: function () {
-      this.screenOrigin = {
-        x: this.clientWidth / 2,
-        y: this.clientHeight / 2
-      }
-      this.selfPos = {
-        x: this.selfPos.x,
-        y: this.selfPos.y,
-        z: this.selfPos.z
-      }
-      this.ctx.lineWidth = 2;
-      this.ctx.strokeStyle = Utils.randomColor();
-      this.initShapes();
+    update: function (args) {
+      this.screenOrigin = args['screenOrigin']
+      this.selfPos = args['pos']
+      this.updateShapes();
     },
-    initShapes: function () {
+    updateShapes: function () {
+      var that = this;
       this.shapes.forEach(function (e, i) {
-        e.initShape();
+        e.update({
+          parent: {
+            pos: that.pos,
+            origin: that.screenOrigin
+          },
+          visibility: that.visibility,
+        });
       })
     },
     render: function () {
@@ -97,14 +107,20 @@
       this.draw();
     },
     draw: function () {
+      var that =this;
       this.shapes.forEach(function (e, i) {
+        e.rotateY();
+        e.rotateX();
         e.render({
-          screenOrigin: this.screenOrigin
+          parent: {
+            pos: that.pos,
+            origin: that.screenOrigin
+          }
         });
       })
     },
     clear: function () {
-      this.cvs.clearRect(0, 0, this.clientWidth, this.clientHeight);
+      this.ctx.clearRect(0, 0, this.clientWidth, this.clientHeight);
     },
     animation: function () {
       var that = this;
@@ -117,52 +133,45 @@
       this.shapes.push(shape);
     },
     init: function () {
-
+      this.resize();
+      var that = this;
+      window.addEventListener('resize', function () {
+        that.resize();
+      }, false)
+      this.updateShapes();
     }
   }
   var sphere1 = new Sphere({
-    pos: { x: 100, y: 100, z: 30 },
-    parentPos: { x: 0, y: 0, z: 0 },
-    r: 150,
-    counts: 20,
-    visibility: 2000,
-    color: Utils.randomColor(),
-    origin: {
-      x: cvs.width / 2,
-      y: cvs.height / 2,
+    pos: { x: 0, y: 0, z: 0 },
+    parent: {
+      pos: { x: 0, y: 0, z: 0 },
+      origin: {
+        x: cvs.width / 2,
+        y: cvs.height / 2,
+      },
     },
+    r: 300,
+    counts: 30,
+    visibility: 1000,
+    color: Utils.randomColor(),
     option: {},
     percent: parseFloat(2 / 30),
     ctx: cvs.getContext('2d'),
     cvs: cvs,
     clientWidth: cvs.width,
     clientHeight: cvs.height,
-    pointSize: 3,
-    rotate: Math.PI / 2000,
+    pointSize: 6,
+    rotate: Math.PI / 1000,
   });
-  var sphere2 = new Sphere({
-    pos: { x: -100, y: -100, z: 30 },
-    parentPos: { x: 0, y: 0, z: 0 },
-    r: 150,
-    counts: 20,
-    visibility: 2000,
-    color: Utils.randomColor(),
-    origin: {
-      x: cvs.width / 2,
-      y: cvs.height / 2,
-    },
-    option: {},
-    percent: parseFloat(2 / 30),
-    ctx: cvs.getContext('2d'),
-    cvs: cvs,
-    clientWidth: cvs.width,
-    clientHeight: cvs.height,
-    pointSize: 3,
-    rotate: Math.PI / 2000,
-  });
+  // sphere1.render();
   // sphere2.render();
-  sphere1.render();
-  sphere2.render();
+  var start = new Start({
+    cvs: cvs,
+    visibility: 1000,
+  });
+  start.addShape(sphere1);
+  start.animation();
+
 </script>
 
 </html>
