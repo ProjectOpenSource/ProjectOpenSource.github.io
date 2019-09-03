@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+  <meta charset='UTF-8'>
+  <title>Document</title>
+</head>
+<style>
+  * {
+    padding: 0px;
+    margin: 0px;
+  }
+
+  html,
+  body {
+    position: absolute;
+    z-index: 0;
+    overflow: hidden;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #fff;
+    overflow: hidden;
+  }
+
+  #canvas {
+    position: absolute;
+    z-index: 1;
+    overflow: hidden;
+  }
+</style>
+
+<body>
+  <canvas id='canvas'>
+    <p>不支持canvas请升级浏览器，推荐使用Google Chrome 浏览器</p>
+  </canvas>
+  <div id='app'></div>
+</body>
+<script src='./commpont/Point.js'></script>
+<script src='./commpont/Sphere.js'></script>
+<script src='./commpont/Utils.js'></script>
+<script>
+  var cvs = document.getElementById('canvas');
+  cvs.width = document.body.clientWidth;
+  cvs.height = document.body.clientHeight;
+  var resize = function (cvs) {
+    cvs.width = document.body.clientWidth;
+    cvs.height = document.body.clientHeight;
+  }
+  var Star = function (args) {
+    this.cvs = args['cvs']
+    this.ctx = this.ctx.getContext('2d')
+    this.shapes = [];
+    this.clientWidth = document.body.clientWidth;
+    this.clientHeight = document.body.clientWidth;
+    this.screenOrigin = {
+      x: this.clientWidth / 2,
+      y: this.clientHeight / 2
+    }
+    this.pos = {
+      x: 0,
+      y: 0,
+      z: 0
+    }
+    this.visibility = args['visibility'];
+  }
+  Star.prototype = {
+    resize: function () {
+      this.cvs.width = document.body.clientWidth;
+      this.cvs.height = document.body.clientHeight;
+      this.clientWidth = this.cvs.width;
+      this.clientHeight = this.cvs.height;
+      this.update();
+    },
+    update: function () {
+      this.screenOrigin = {
+        x: this.clientWidth / 2,
+        y: this.clientHeight / 2
+      }
+      this.selfPos = {
+        x: this.selfPos.x,
+        y: this.selfPos.y,
+        z: this.selfPos.z
+      }
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeStyle = Utils.randomColor();
+      this.initShapes();
+    },
+    initShapes: function () {
+      this.shapes.forEach(function (e, i) {
+        e.initShape();
+      })
+    },
+    render: function () {
+      this.clear();
+      this.draw();
+    },
+    draw: function () {
+      this.shapes.forEach(function (e, i) {
+        e.render({
+          screenOrigin: this.screenOrigin
+        });
+      })
+    },
+    clear: function () {
+      this.cvs.clearRect(0, 0, this.clientWidth, this.clientHeight);
+    },
+    animation: function () {
+      var that = this;
+      that.render();
+      window.requestAnimationFrame(function () {
+        that.animation();
+      })
+    },
+    addShape: function (shape) {
+      this.shapes.push(shape);
+    },
+    init: function () {
+
+    }
+  }
+  var sphere1 = new Sphere({
+    pos: { x: 100, y: 100, z: 30 },
+    parentPos: { x: 0, y: 0, z: 0 },
+    r: 150,
+    counts: 20,
+    visibility: 2000,
+    color: Utils.randomColor(),
+    origin: {
+      x: cvs.width / 2,
+      y: cvs.height / 2,
+    },
+    option: {},
+    percent: parseFloat(2 / 30),
+    ctx: cvs.getContext('2d'),
+    cvs: cvs,
+    clientWidth: cvs.width,
+    clientHeight: cvs.height,
+    pointSize: 3,
+    rotate: Math.PI / 2000,
+  });
+  var sphere2 = new Sphere({
+    pos: { x: -100, y: -100, z: 30 },
+    parentPos: { x: 0, y: 0, z: 0 },
+    r: 150,
+    counts: 20,
+    visibility: 2000,
+    color: Utils.randomColor(),
+    origin: {
+      x: cvs.width / 2,
+      y: cvs.height / 2,
+    },
+    option: {},
+    percent: parseFloat(2 / 30),
+    ctx: cvs.getContext('2d'),
+    cvs: cvs,
+    clientWidth: cvs.width,
+    clientHeight: cvs.height,
+    pointSize: 3,
+    rotate: Math.PI / 2000,
+  });
+  // sphere2.render();
+  sphere1.render();
+  sphere2.render();
+</script>
+
+</html>

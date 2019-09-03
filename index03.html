@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+</head>
+<style>
+  * {
+    margin: 0px;
+    padding: 0px;
+  }
+
+  body,
+  html {
+    position: absolute;
+    display: inline-block;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    overflow: hidden;
+  }
+</style>
+
+<body>
+  <canvas id="canvas"></canvas>
+</body>
+<script>
+  function Stage(elm) {
+    this.cas = document.getElementById(elm);
+    this.ctx = this.cas.getContext("2d");
+    this.origin = {};
+    this.vertex = [];
+    this.counts = 0;  //因为有3个demo，实现方式不一致，所以放在下面赋值
+    this.radius = 300;
+    console.log(this)
+    this.init();
+  }
+
+  Stage.prototype = {
+    resize: function (booleam) {
+      this.width = this.cas.width = document.body.clientWidth;
+      this.height = this.cas.height = document.body.clientHeight;
+    },
+    clear: function () {
+      this.ctx.clearRect(0, 0, this.width, this.height);
+    },
+    getArea: function () {
+      var circle_arr = [],
+        radius_x = this.width / 2,
+        radius_y = this.height / 2;
+
+      /*  关于球面知识点科普，应该很多同学也记不得了，我也记不得，还是百度出来公式再套的：
+          因为我们把球心原点定在（0,0,0），所以x0, y0, z0都为0
+          使用极坐标来表示半径为r的球面：
+          φ - 水平（纬度） - 0≤φ≤π;   //必须在0到Math.PI之间,Math.acos(k)反余弦等于斜边比临边
+          θ - 竖直（经度） - 0≤θ≤2π;  //必须在0到Math.PI*2之间
+          x = x0 + r*sinθcosφ
+          y = y0 + r*sinθsinφ
+          z = z0 + r*cosθ
+      */
+
+      /* --
+          球体绘制方法 - 1
+          这个是我不小心试出来的，类似于多条螺旋线形成一个圆，以点来描述球体的话这个是最高效的
+      -- */
+      // this.counts = 1000;
+      // for (var i = 0; i < this.counts; i++) {
+      //   var φ = Math.PI * (i / this.counts);
+      //   var θ = i / Math.PI * 2 * this.counts;
+
+      //   var x = this.radius * Math.sin(φ) * Math.cos(θ);
+      //   var y = this.radius * Math.sin(φ) * Math.sin(θ);
+      //   var z = this.radius * Math.cos(φ);
+
+      //   circle_arr.push({ posx: x, posy: y, posz: z });
+      // }
+
+      /* --
+          球体绘制方法 - 2
+          常规操作，规规矩矩的循环
+      -- */
+      this.counts = 30;
+      for(var i = 0; i < this.counts; i++){
+          var φ = Math.PI * (i / this.counts);
+
+          for(var j = 0; j < 10; j++){
+              var θ = Math.PI * 2 * (j / 10);
+              var x = this.radius * Math.sin(φ) * Math.cos(θ);
+              var y = this.radius * Math.sin(φ) * Math.sin(θ);
+              var z = this.radius * Math.cos(φ);
+              console.log('x:' + x + '\ny:' + y + '\nz:' + z)
+
+              circle_arr.push({posx: x, posy: y, posz: z});
+          }
+      }
+
+      /* --
+          球体绘制方法 - 3
+          忘记之前从哪里看到的，因为有记录过，但现在找不到来源了，实现上我问了一个数学专业出身的童鞋他也不明白…
+          看绘制规律跟方法2类似，但毕竟看不懂的东西逼格会高点嘛，下面的k,φ,θ就是看不懂的逼格
+      -- */
+      // this.counts = 50;
+      // for(var i = 0; i < this.counts; i++){
+      //     var k = -1+(2*(i+1)-1)/this.counts;
+      //     var φ = Math.acos(k);
+      //     var θ = φ*Math.sqrt(this.counts*Math.PI);
+
+      //     for(var j = 0; j < 50; j++){
+      //         var θ = Math.PI * 2 * (j / 50);
+      //         var x = this.radius * Math.sin(φ) * Math.cos(θ);
+      //         var y = this.radius * Math.sin(φ) * Math.sin(θ);
+      //         var z = this.radius * Math.cos(φ);
+
+      //         circle_arr.push({posx: x, posy: y, posz: z});
+      //     }
+      // }
+
+      this.creatVertex(circle_arr);
+    },
+    creatVertex: function (vertex) {
+      //设置原定坐标
+      var origin = {
+        x: this.width / 2,
+        y: this.height / 2
+      };
+
+      var rotateSpeed = Math.PI / 2 / 100;
+
+      vertex.forEach(function (e, i) {
+        var vex = new imgVertex(e, 1000, origin, rotateSpeed, 4);
+        this.vertex.push(vex);
+      }.bind(this));
+
+      this.ctx.strokeStyle = "#24cb89";
+    },
+    renderPointe: function () {
+      this.clear();
+      this.vertex.forEach(function (e, i) {
+        e.draw(this.ctx);
+      }.bind(this));
+    },
+    renderLine: function () {
+      this.clear();
+
+      this.ctx.beginPath();
+      this.vertex.forEach(function (e, i) {
+        e.vertexUpDate();
+        this.ctx.lineTo(e.x, e.y);
+      }.bind(this));
+      this.ctx.stroke();
+    },
+    animate: function () {
+      var _this = this;
+
+      this.renderPointe();
+      this.renderLine();  //这个是给感兴趣的童鞋通过连线观察每个点的绘制顺序
+
+      window.requestAnimationFrame(function () {
+        _this.animate();
+      });
+    },
+    init: function () {
+      this.resize(true);
+      this.getArea();
+      this.animate();
+    }
+  }
+
+  function imgVertex(vex, fl, origin, angle, size, color) {
+    var r = Math.floor(Math.random() * 255),
+      g = Math.floor(Math.random() * 255),
+      b = Math.floor(Math.random() * 255);
+
+    this.x = 0;
+    this.y = 0;
+    this.fl = fl;  //视距
+    this.origin = origin;
+    this.angle = angle;
+    this.posx = vex.posx;
+    this.posy = vex.posy;
+    this.posz = vex.posz;
+    this.size = size ? size : 20;
+    this.r = size ? size : 20;
+    this.color = color ? color : 'rgba(' + r + ',' + g + ',' + b + ',0.6)';
+    console.log(this)
+  }
+
+  imgVertex.prototype = {
+    //Y轴旋转
+    rotateY: function(){
+      
+      var cosy = Math.cos(this.angle),
+            siny = Math.sin(this.angle),
+            x1 = this.posx * cosy + this.posz * siny,
+            z1 = this.posz * cosy - this.posx * siny;
+
+        this.posx = x1;
+        this.posz = z1;
+    },
+    rotateX:function(){
+      var cosx = Math.cos(this.angle),
+          sinx = Math.sin(this.angle),
+          y1 = this.posy * cosx + this.posz * sinx,
+          z1 = this.posz * cosx - this.posy * sinx;
+      
+      this.posy = y1;
+      this.posz = z1;
+    },
+    rotateZ:function(){
+      var cosz = Math.cos(this.angle),
+          sinz=  Math.sin(this.angle),
+          y1=this.posy*cosz+this.posx*sinz,
+          x1=this.posx*cosz-this.posy*sinz;
+      this.posx=x1;
+      this.posy=y1;
+    },
+    //3D坐标投影
+    projection: function () {
+      if (this.posz > -this.fl) {
+        var scale = this.fl / (this.fl + this.posz);
+        this.x = this.origin.x + this.posx * scale;
+        this.y = this.origin.y + this.posy * scale;
+        this.size = this.r * scale;
+      }
+    },
+    draw: function (ctx) {
+      // this.rotateX();
+      // this.rotateY();
+      this.rotateZ();
+
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI*2, false);  //canvas中绘制圆会比绘制方块消耗更多性能
+      // ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+      ctx.closePath();
+      ctx.fillStyle = this.color;
+      ctx.fill();
+
+      this.projection();
+    },
+    vertexUpDate: function (ctx) {
+      this.rotateY();
+      this.projection();
+    }
+  }
+
+  new Stage("canvas");
+</script>
+
+</html>

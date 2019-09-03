@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+</head>
+<style>
+  * {
+    margin: 0px;
+    padding: 0px;
+  }
+
+  body,
+  html {
+    position: absolute;
+    display: inline-block;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    overflow: hidden;
+  }
+</style>
+
+<body>
+    <canvas id="canvas"></canvas>
+</body>
+<script>
+function Stage(elm){
+    this.cas = document.getElementById(elm);
+    this.ctx = this.cas.getContext("2d");
+    this.origin = {};
+    this.vertex = [];
+    this.counts = 50;
+
+    this.init();
+}
+
+Stage.prototype = {
+    resize: function(booleam){
+        this.width = this.cas.width = document.body.clientWidth;
+        this.height = this.cas.height = document.body.clientHeight;
+        // this.width = this.cas.width = booleam ? this.cas.parentNode.clientWidth * 2 : window.innerWidth * 2;
+        // this.height = this.cas.height = booleam ? this.cas.parentNode.clientHeight * 2 : window.innerHeight * 2;
+    },
+    clear: function(){
+        this.ctx.clearRect(0,0,this.width,this.height);
+    },
+    createPosition: function(){
+        var circle_arr = [],
+            radius_x = this.width/2,
+            radius_y = this.height/2;
+
+        for(var i = 0; i < this.counts; i++){
+            circle_arr.push({
+                    posx: Math.random()*radius_x-radius_x/2,
+                    posy: Math.random()*radius_y-radius_y/2,
+                    posz: Math.random()*radius_x-radius_x/2
+            });
+        }
+
+        this.creatVertex(circle_arr);
+    },
+    creatVertex: function(vertex){
+        //设置原点坐标
+        var origin = {
+            x: this.width/2,
+            y: this.height/2
+        };
+
+        var rotateSpeed = -Math.PI/6000;
+
+        vertex.forEach(function(e, i){
+            var vex = new particle(e, 1000, origin, rotateSpeed);
+            this.vertex.push(vex);
+        }.bind(this));
+    },
+    sort: function(){
+        this.vertex.sort(function (a, b) { return b.posz-a.posz });
+    },
+    render: function(){
+        this.clear();
+        this.sort();
+        this.vertex.forEach(function(e, i){
+            e.draw(this.ctx);
+        }.bind(this));
+    },
+    animate: function(){
+        var _this = this;
+
+        this.render();
+
+        window.requestAnimationFrame(function(){
+            _this.animate();
+        });
+    },
+    init: function(){
+        this.resize(true);
+        this.createPosition();
+        this.animate();
+    }
+}
+
+function particle(vex, fl, origin, angle, size, color){
+    var r = Math.floor(Math.random()*255),
+        g = Math.floor(Math.random()*255),
+        b = Math.floor(Math.random()*255);
+
+    this.x = 0;
+    this.y = 0;
+    this.fl = fl;  //视距
+    this.origin = origin;
+    this.angle = angle;
+    this.posx = vex.posx;
+    this.posy = vex.posy;
+    this.posz = vex.posz;
+    this.size = size ? size : 10;
+    this.r = size ? size : 10;
+    this.color = color ? color : 'rgba('+r+','+g+','+b+',0.6)';
+}
+
+particle.prototype = {
+    //Y轴旋转
+    rotateY: function(){
+      var cosy = Math.cos(this.angle),
+          siny = Math.sin(this.angle),
+          x1 = this.posx * cosy + this.posz * siny,
+          z1 = this.posz * cosy - this.posx * siny;
+
+      this.posx = x1;
+      this.posz = z1;
+    },
+    rotateX:function(){
+      var cosx = Math.cos(this.angle),
+          sinx = Math.sin(this.angle),
+          y1 = this.posy * cosx + this.posz * sinx,
+          z1 = this.posz * cosx - this.posy * sinx;
+      
+      this.posy = y1;
+      this.posz = z1;
+    },
+    rotateZ:function(){
+      var cosz = Math.cos(this.angle),
+          sinz=  Math.sin(this.angle),
+          y1=this.posy*cosz+this.posx*sinz,
+          x1=this.posx*cosz-this.posy*sinz;
+      this.posx=x1;
+      this.posy=y1;
+    },
+    //3D坐标投影
+    projection: function(){
+        if (this.posz > -this.fl) {
+            var scale = this.fl / (this.fl + this.posz);
+            this.x = this.origin.x + this.posx * scale;
+            this.y = this.origin.y + this.posy * scale;
+            this.size = this.r * scale;
+        }
+    },
+    draw: function(ctx){
+        // this.rotateZ();
+        // this.rotateX();
+        this.rotateY();
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI*2, false);
+        ctx.closePath();
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        this.projection();
+    }
+}
+
+new Stage("canvas");
+</script>
+
+</html>
