@@ -1,1 +1,0 @@
-.scroll-bar-demo{padding-top:80px}.scroll-parent{height:300px;width:100%;overflow:auto;font-size:0;margin-top:20px;border:1px solid #aaa}.scroll-child,.scroll-parent{display:inline-block;-webkit-box-sizing:border-box;box-sizing:border-box}.scroll-child{position:relative;background-color:#ddd;height:280px;width:calc(110% - 20px);margin:0 10px;padding:0;border:1px solid #eee}
